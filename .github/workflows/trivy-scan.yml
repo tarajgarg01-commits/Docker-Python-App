@@ -1,0 +1,63 @@
+name: 🔒 Trivy Container Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  trivy-scan:
+    name: 🐳 Build & Scan Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: 🏷️ Display Scan Info
+        run: |
+          echo "🔍 Starting Trivy security scan..."
+          echo "Repository: ${{ github.repository }}"
+          echo "Triggered by: ${{ github.actor }}"
+          echo "Base Image: python:3.9-slim (secure variant)"
+
+      - name: 🐳 Build Docker Image
+        run: docker build -t myapp:latest .
+
+      - name: 🔍 Run Trivy Scan (Table Format - Human Readable)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'myapp:latest'
+          format: 'table'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'
+
+      - name: 📊 Run Trivy Scan (SARIF Format - For GitHub Security Tab)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'myapp:latest'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: 📤 Upload Results to GitHub Security Tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: 🚨 Fail Pipeline on Critical/High Vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'myapp:latest'
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+
+      - name: ✅ Scan Complete
+        if: success()
+        run: echo "🎉 No CRITICAL or HIGH vulnerabilities found! Image is safe to deploy."
