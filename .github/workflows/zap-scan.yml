@@ -1,0 +1,30 @@
+name: 🕷️ DAST Scan with OWASP ZAP
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  zap-scan:
+    name: 🔍 Dynamic Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: 🏷️ Display Scan Info
+        run: |
+          echo "🔍 Starting OWASP ZAP DAST scan..."
+          echo "Target: Test application"
+
+      - name: 🕷️ Run ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: 'http://zero.webappsecurity.com'
+          cmd_options: '-a'
+
+      - name: ✅ Scan Complete
+        if: always()
+        run: echo "🎉 DAST scan completed! Check the report artifact for details."
